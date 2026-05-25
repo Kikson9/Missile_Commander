@@ -1,0 +1,34 @@
+# Build folder
+build/
+
+# VS Code settings
+.vscode/
+
+# macOS files
+.DS_Store
+
+# Executables
+*.out
+*.exe
+*.app
+
+# CMake generated files
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# CMake folders
+CMakeFiles/
+
+# Temporary files
+*.o
+*.obj
+*.tmp
+
+# Demo files
+missile-commander.c
+missike-commander.cpp
+
+# Logs
+*.log
