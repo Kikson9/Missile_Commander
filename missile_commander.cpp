@@ -82,6 +82,14 @@ public:
         if (frame % 16 < 8)
             DrawCircle(position.x, position.y, 3, YELLOW);
     }
+
+    void Update()
+    {
+        if (!active)
+            return;
+        position.x += speed.x;
+        position.y += speed.y;
+    }
 };
 
 class Interceptor
@@ -120,6 +128,14 @@ public:
         if (frame % 16 < 8)
             DrawCircle(position.x, position.y, 3, BLUE);
     }
+
+    void Update()
+    {
+        if (!active)
+            return;
+        position.x += speed.x;
+        position.y += speed.y;
+    }
 };
 
 class Explosion
@@ -156,6 +172,19 @@ public:
             return;
         DrawCircle(position.x, position.y,
                    EXPLOSION_RADIUS * radiusMultiplier, EXPLOSION_COLOR);
+    }
+
+    void Update()
+    {
+        if (!active)
+            return;
+        frame++;
+        if (frame <= EXPLOSION_INCREASE_TIME)
+            radiusMultiplier = frame / (float)EXPLOSION_INCREASE_TIME;
+        else if (frame <= EXPLOSION_TOTAL_TIME)
+            radiusMultiplier = 1 - (frame - (float)EXPLOSION_INCREASE_TIME) / (float)EXPLOSION_TOTAL_TIME;
+        else
+            Reset();
     }
 };
 
@@ -375,9 +404,7 @@ void UpdateGame(void)
             {
                 if (interceptor[i].active)
                 {
-                    // Update position
-                    interceptor[i].position.x += interceptor[i].speed.x;
-                    interceptor[i].position.y += interceptor[i].speed.y;
+                    interceptor[i].Update();
 
                     // Distance to objective
                     distance = sqrt(pow(interceptor[i].position.x - interceptor[i].objective.x, 2) +
@@ -385,10 +412,9 @@ void UpdateGame(void)
 
                     if (distance < INTERCEPTOR_SPEED)
                     {
-                        // Interceptor dissapears
-                        interceptor[i].active = false;
+                        interceptor[i].Reset();
 
-                        // Explosion
+                        // Create explosion at interceptor position
                         explosion[explosionIndex].position = interceptor[i].position;
                         explosion[explosionIndex].active = true;
                         explosion[explosionIndex].frame = 0;
@@ -407,8 +433,7 @@ void UpdateGame(void)
                 if (missile[i].active)
                 {
                     // Update position
-                    missile[i].position.x += missile[i].speed.x;
-                    missile[i].position.y += missile[i].speed.y;
+                    missile[i].Update();
 
                     // Collision and missile out of bounds
                     if (missile[i].position.y > screenHeight)
@@ -494,23 +519,9 @@ void UpdateGame(void)
             }
 
             // Explosions update
+            // Explosions update
             for (int i = 0; i < MAX_EXPLOSIONS; i++)
-            {
-                if (explosion[i].active)
-                {
-                    explosion[i].frame++;
-
-                    if (explosion[i].frame <= EXPLOSION_INCREASE_TIME)
-                        explosion[i].radiusMultiplier = explosion[i].frame / (float)EXPLOSION_INCREASE_TIME;
-                    else if (explosion[i].frame <= EXPLOSION_TOTAL_TIME)
-                        explosion[i].radiusMultiplier = 1 - (explosion[i].frame - (float)EXPLOSION_INCREASE_TIME) / (float)EXPLOSION_TOTAL_TIME;
-                    else
-                    {
-                        explosion[i].frame = 0;
-                        explosion[i].active = false;
-                    }
-                }
-            }
+                explosion[i].Update();
 
             // Fire logic
             UpdateOutgoingFire();
