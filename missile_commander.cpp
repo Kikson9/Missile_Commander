@@ -73,6 +73,15 @@ public:
     {
         return active;
     }
+
+    void Draw(int frame)
+    {
+        if (!active)
+            return;
+        DrawLine(origin.x, origin.y, position.x, position.y, RED);
+        if (frame % 16 < 8)
+            DrawCircle(position.x, position.y, 3, YELLOW);
+    }
 };
 
 class Interceptor
@@ -101,6 +110,15 @@ public:
     bool IsActive()
     {
         return active;
+    }
+
+    void Draw(int frame)
+    {
+        if (!active)
+            return;
+        DrawLine(origin.x, origin.y, position.x, position.y, GREEN);
+        if (frame % 16 < 8)
+            DrawCircle(position.x, position.y, 3, BLUE);
     }
 };
 
@@ -131,6 +149,14 @@ public:
     {
         return active;
     }
+
+    void Draw()
+    {
+        if (!active)
+            return;
+        DrawCircle(position.x, position.y,
+                   EXPLOSION_RADIUS * radiusMultiplier, EXPLOSION_COLOR);
+    }
 };
 
 class Launcher
@@ -153,6 +179,16 @@ public:
     bool IsActive()
     {
         return active;
+    }
+
+    void Draw()
+    {
+        if (!active)
+            return;
+        DrawRectangle(
+            position.x - LAUNCHER_SIZE / 2,
+            position.y - LAUNCHER_SIZE / 2,
+            LAUNCHER_SIZE, LAUNCHER_SIZE, GRAY);
     }
 };
 
@@ -181,6 +217,16 @@ public:
     bool IsActive()
     {
         return active;
+    }
+
+    void Draw()
+    {
+        if (!active)
+            return;
+        DrawRectangle(
+            position.x - BUILDING_SIZE / 2,
+            position.y - BUILDING_SIZE / 2,
+            BUILDING_SIZE, BUILDING_SIZE, LIGHTGRAY);
     }
 };
 
@@ -511,48 +557,25 @@ void DrawGame(void)
     if (!gameOver)
     {
         // Draw missiles
-        for (int i = 0; i < MAX_MISSILES; i++)
-        {
-            if (missile[i].active)
-            {
-                DrawLine(missile[i].origin.x, missile[i].origin.y, missile[i].position.x, missile[i].position.y, RED);
 
-                if (framesCounter % 16 < 8)
-                    DrawCircle(missile[i].position.x, missile[i].position.y, 3, YELLOW);
-            }
-        }
+        for (int i = 0; i < MAX_MISSILES; i++)
+            missile[i].Draw(framesCounter);
 
         // Draw interceptors
         for (int i = 0; i < MAX_INTERCEPTORS; i++)
-        {
-            if (interceptor[i].active)
-            {
-                DrawLine(interceptor[i].origin.x, interceptor[i].origin.y, interceptor[i].position.x, interceptor[i].position.y, GREEN);
-
-                if (framesCounter % 16 < 8)
-                    DrawCircle(interceptor[i].position.x, interceptor[i].position.y, 3, BLUE);
-            }
-        }
+            interceptor[i].Draw(framesCounter);
 
         // Draw explosions
         for (int i = 0; i < MAX_EXPLOSIONS; i++)
-        {
-            if (explosion[i].active)
-                DrawCircle(explosion[i].position.x, explosion[i].position.y, EXPLOSION_RADIUS * explosion[i].radiusMultiplier, EXPLOSION_COLOR);
-        }
+            explosion[i].Draw();
 
-        // Draw buildings and launchers
+        // Draw launchers
         for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
-        {
-            if (launcher[i].active)
-                DrawRectangle(launcher[i].position.x - LAUNCHER_SIZE / 2, launcher[i].position.y - LAUNCHER_SIZE / 2, LAUNCHER_SIZE, LAUNCHER_SIZE, GRAY);
-        }
+            launcher[i].Draw();
 
+        // Draw buildings
         for (int i = 0; i < BUILDINGS_AMOUNT; i++)
-        {
-            if (building[i].active)
-                DrawRectangle(building[i].position.x - BUILDING_SIZE / 2, building[i].position.y - BUILDING_SIZE / 2, BUILDING_SIZE, BUILDING_SIZE, LIGHTGRAY);
-        }
+            building[i].Draw();
 
         // Draw score
         DrawText(TextFormat("SCORE %4i", score), 20, 20, 40, LIGHTGRAY);
