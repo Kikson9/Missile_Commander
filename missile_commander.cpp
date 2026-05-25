@@ -260,133 +260,141 @@ public:
 };
 
 //------------------------------------------------------------------------------------
-// Global Variables Declaration
+// Game Class
 //------------------------------------------------------------------------------------
-static int screenWidth = 800;
-static int screenHeight = 450;
+class Game
+{
+public:
+    // Screen
+    int screenWidth;
+    int screenHeight;
 
-static int framesCounter = 0;
-static bool gameOver = false;
-static bool pause = false;
-static int score = 0;
+    // Game state
+    int framesCounter;
+    bool gameOver;
+    bool pause;
+    int score;
 
-static Missile missile[MAX_MISSILES];
-static Interceptor interceptor[MAX_INTERCEPTORS];
-static Explosion explosion[MAX_EXPLOSIONS];
-static Launcher launcher[LAUNCHERS_AMOUNT];
-static Building building[BUILDINGS_AMOUNT];
-static int explosionIndex = 0;
+    // Game objects
+    Missile missile[MAX_MISSILES];
+    Interceptor interceptor[MAX_INTERCEPTORS];
+    Explosion explosion[MAX_EXPLOSIONS];
+    Launcher launcher[LAUNCHERS_AMOUNT];
+    Building building[BUILDINGS_AMOUNT];
+    int explosionIndex;
 
-//------------------------------------------------------------------------------------
-// Module Functions Declaration (local)
-//------------------------------------------------------------------------------------
-static void InitGame(void);        // Initialize game
-static void UpdateGame(void);      // Update game (one frame)
-static void DrawGame(void);        // Draw game (one frame)
-static void UnloadGame(void);      // Unload game
-static void UpdateDrawFrame(void); // Update and Draw (one frame)
+    // Starfield
+    Vector2 stars[150];
+    int starBrightness[150];
 
-// Additional module functions
-static void UpdateOutgoingFire();
-static void UpdateIncomingFire();
+    // Constructor
+    Game();
+
+    // Core methods
+    void Update();
+    void Draw();
+    void Reset();
+
+private:
+    void UpdateOutgoingFire();
+    void UpdateIncomingFire();
+};
 
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
+
 int main(void)
 {
-    // Initialization (Note windowTitle is unused on Android)
-    //---------------------------------------------------------
-    InitWindow(screenWidth, screenHeight, "Missile Commander CPP");
-
-    InitGame();
-
-#if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
-#else
+    InitWindow(800, 450, "Missile Commander CPP");
     SetTargetFPS(60);
-    //--------------------------------------------------------------------------------------
 
-    // Main game loop
-    while (!WindowShouldClose()) // Detect window close button or ESC key
+    Game game;
+
+    while (!WindowShouldClose())
     {
-        // Update and Draw
-        //----------------------------------------------------------------------------------
-        UpdateDrawFrame();
-        //----------------------------------------------------------------------------------
+        game.Update();
+        game.Draw();
     }
-#endif
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    UnloadGame(); // Unload loaded data (textures, sounds, models...)
 
-    CloseWindow(); // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
-
+    CloseWindow();
     return 0;
 }
 
-//--------------------------------------------------------------------------------------
-// Game Module Functions Definition
-//--------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+// Game class method implementations
+//------------------------------------------------------------------------------------
 
-// Initialize game variables
-void InitGame(void)
+Game::Game()
 {
-    // Initialize missiles
-    for (int i = 0; i < MAX_MISSILES; i++)
-    {
-        missile[i].origin = (Vector2){(float)(0), (float)(0)};
-        missile[i].speed = (Vector2){(float)(0), (float)(0)};
-        missile[i].position = (Vector2){(float)(0), (float)(0)};
+    screenWidth = 800;
+    screenHeight = 450;
+    framesCounter = 0;
+    gameOver = false;
+    pause = false;
+    score = 0;
+    explosionIndex = 0;
 
-        missile[i].active = false;
-    }
-
-    // Initialize interceptors
-    for (int i = 0; i < MAX_INTERCEPTORS; i++)
-    {
-        interceptor[i].origin = (Vector2){(float)(0), (float)(0)};
-        interceptor[i].speed = (Vector2){(float)(0), (float)(0)};
-        interceptor[i].position = (Vector2){(float)(0), (float)(0)};
-
-        interceptor[i].active = false;
-    }
-
-    // Initialize explosions
-    for (int i = 0; i < MAX_EXPLOSIONS; i++)
-    {
-        explosion[i].position = (Vector2){(float)(0), (float)(0)};
-        explosion[i].frame = 0;
-        explosion[i].active = false;
-    }
-
-    // Initialize buildings and launchers
+    // Initialize positions
     int sparcing = screenWidth / (LAUNCHERS_AMOUNT + BUILDINGS_AMOUNT + 1);
 
-    // Buildings and launchers placing
-    launcher[0].position = (Vector2){(float)(1 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
-    building[0].position = (Vector2){(float)(2 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
-    building[1].position = (Vector2){(float)(3 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
-    building[2].position = (Vector2){(float)(4 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
-    launcher[1].position = (Vector2){(float)(5 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
-    building[3].position = (Vector2){(float)(6 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
-    building[4].position = (Vector2){(float)(7 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
-    building[5].position = (Vector2){(float)(8 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
-    launcher[2].position = (Vector2){(float)(9 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
+    launcher[0].position = {(float)(1 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
+    building[0].position = {(float)(2 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[1].position = {(float)(3 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[2].position = {(float)(4 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    launcher[1].position = {(float)(5 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
+    building[3].position = {(float)(6 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[4].position = {(float)(7 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[5].position = {(float)(8 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    launcher[2].position = {(float)(9 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
 
-    // Buildings and launchers activation
     for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
         launcher[i].active = true;
     for (int i = 0; i < BUILDINGS_AMOUNT; i++)
         building[i].active = true;
 
-    // Initialize game variables
-    score = 0;
+    // Initialize starfield
+    for (int i = 0; i < 150; i++)
+    {
+        stars[i].x = GetRandomValue(0, screenWidth);
+        stars[i].y = GetRandomValue(0, screenHeight - 60);
+        starBrightness[i] = GetRandomValue(100, 255);
+    }
 }
 
-// Update game (one frame)
-void UpdateGame(void)
+void Game::Reset()
+{
+    framesCounter = 0;
+    gameOver = false;
+    pause = false;
+    score = 0;
+    explosionIndex = 0;
+
+    for (int i = 0; i < MAX_MISSILES; i++)
+        missile[i].Reset();
+    for (int i = 0; i < MAX_INTERCEPTORS; i++)
+        interceptor[i].Reset();
+    for (int i = 0; i < MAX_EXPLOSIONS; i++)
+        explosion[i].Reset();
+    for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
+        launcher[i].Reset();
+    for (int i = 0; i < BUILDINGS_AMOUNT; i++)
+        building[i].Reset();
+
+    int sparcing = screenWidth / (LAUNCHERS_AMOUNT + BUILDINGS_AMOUNT + 1);
+
+    launcher[0].position = {(float)(1 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
+    building[0].position = {(float)(2 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[1].position = {(float)(3 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[2].position = {(float)(4 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    launcher[1].position = {(float)(5 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
+    building[3].position = {(float)(6 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[4].position = {(float)(7 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    building[5].position = {(float)(8 * sparcing), (float)(screenHeight - BUILDING_SIZE / 2)};
+    launcher[2].position = {(float)(9 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
+}
+
+void Game::Update()
 {
     if (!gameOver)
     {
@@ -397,7 +405,7 @@ void UpdateGame(void)
         {
             framesCounter++;
 
-            static float distance;
+            float distance;
 
             // Interceptors update
             for (int i = 0; i < MAX_INTERCEPTORS; i++)
@@ -406,7 +414,6 @@ void UpdateGame(void)
                 {
                     interceptor[i].Update();
 
-                    // Distance to objective
                     distance = sqrt(pow(interceptor[i].position.x - interceptor[i].objective.x, 2) +
                                     pow(interceptor[i].position.y - interceptor[i].objective.y, 2));
 
@@ -414,7 +421,6 @@ void UpdateGame(void)
                     {
                         interceptor[i].Reset();
 
-                        // Create explosion at interceptor position
                         explosion[explosionIndex].position = interceptor[i].position;
                         explosion[explosionIndex].active = true;
                         explosion[explosionIndex].frame = 0;
@@ -432,26 +438,23 @@ void UpdateGame(void)
             {
                 if (missile[i].active)
                 {
-                    // Update position
                     missile[i].Update();
 
-                    // Collision and missile out of bounds
                     if (missile[i].position.y > screenHeight)
-                        missile[i].active = false;
+                        missile[i].Reset();
                     else
                     {
-                        // CHeck collision with launchers
+                        // Check collision with launchers
                         for (int j = 0; j < LAUNCHERS_AMOUNT; j++)
                         {
                             if (launcher[j].active)
                             {
-                                if (CheckCollisionPointRec(missile[i].position, (Rectangle){launcher[j].position.x - LAUNCHER_SIZE / 2, launcher[j].position.y - LAUNCHER_SIZE / 2,
-                                                                                            LAUNCHER_SIZE, LAUNCHER_SIZE}))
+                                if (CheckCollisionPointRec(missile[i].position,
+                                                           (Rectangle){launcher[j].position.x - LAUNCHER_SIZE / 2,
+                                                                       launcher[j].position.y - LAUNCHER_SIZE / 2,
+                                                                       LAUNCHER_SIZE, LAUNCHER_SIZE}))
                                 {
-                                    // Missile dissapears
-                                    missile[i].active = false;
-
-                                    // Explosion and destroy building
+                                    missile[i].Reset();
                                     launcher[j].active = false;
 
                                     explosion[explosionIndex].position = missile[i].position;
@@ -466,19 +469,18 @@ void UpdateGame(void)
                             }
                         }
 
-                        // CHeck collision with buildings
+                        // Check collision with buildings
                         for (int j = 0; j < BUILDINGS_AMOUNT; j++)
                         {
                             if (building[j].active)
                             {
-                                if (CheckCollisionPointRec(missile[i].position, (Rectangle){building[j].position.x - BUILDING_SIZE / 2, building[j].position.y - BUILDING_SIZE / 2,
-                                                                                            BUILDING_SIZE, BUILDING_SIZE}))
+                                if (CheckCollisionPointRec(missile[i].position,
+                                                           (Rectangle){building[j].position.x - BUILDING_SIZE / 2,
+                                                                       building[j].position.y - BUILDING_SIZE / 2,
+                                                                       BUILDING_SIZE, BUILDING_SIZE}))
                                 {
-                                    // Missile dissapears
-                                    missile[i].active = false;
-
-                                    // Explosion and destroy building
-                                    building[j].active = false;
+                                    missile[i].Reset();
+                                    building[j].Hit();
 
                                     explosion[explosionIndex].position = missile[i].position;
                                     explosion[explosionIndex].active = true;
@@ -492,15 +494,16 @@ void UpdateGame(void)
                             }
                         }
 
-                        // CHeck collision with explosions
+                        // Check collision with explosions
                         for (int j = 0; j < MAX_EXPLOSIONS; j++)
                         {
                             if (explosion[j].active)
                             {
-                                if (CheckCollisionPointCircle(missile[i].position, explosion[j].position, EXPLOSION_RADIUS * explosion[j].radiusMultiplier))
+                                if (CheckCollisionPointCircle(missile[i].position,
+                                                              explosion[j].position,
+                                                              EXPLOSION_RADIUS * explosion[j].radiusMultiplier))
                                 {
-                                    // Missile dissapears and we earn 100 points
-                                    missile[i].active = false;
+                                    missile[i].Reset();
                                     score += 100;
 
                                     explosion[explosionIndex].position = missile[i].position;
@@ -519,7 +522,6 @@ void UpdateGame(void)
             }
 
             // Explosions update
-            // Explosions update
             for (int i = 0; i < MAX_EXPLOSIONS; i++)
                 explosion[i].Update();
 
@@ -529,7 +531,6 @@ void UpdateGame(void)
 
             // Game over logic
             int checker = 0;
-
             for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
             {
                 if (!launcher[i].active)
@@ -551,24 +552,24 @@ void UpdateGame(void)
     else
     {
         if (IsKeyPressed(KEY_ENTER))
-        {
-            InitGame();
-            gameOver = false;
-        }
+            Reset();
     }
 }
 
-// Draw game (one frame)
-void DrawGame(void)
+void Game::Draw()
 {
     BeginDrawing();
 
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
+
+    // Draw starfield
+    for (int i = 0; i < 150; i++)
+        DrawPixel(stars[i].x, stars[i].y,
+                  (Color){255, 255, 255, (unsigned char)starBrightness[i]});
 
     if (!gameOver)
     {
         // Draw missiles
-
         for (int i = 0; i < MAX_MISSILES; i++)
             missile[i].Draw(framesCounter);
 
@@ -592,31 +593,21 @@ void DrawGame(void)
         DrawText(TextFormat("SCORE %4i", score), 20, 20, 40, LIGHTGRAY);
 
         if (pause)
-            DrawText("GAME PAUSED", screenWidth / 2 - MeasureText("GAME PAUSED", 40) / 2, screenHeight / 2 - 40, 40, GRAY);
+            DrawText("GAME PAUSED",
+                     screenWidth / 2 - MeasureText("GAME PAUSED", 40) / 2,
+                     screenHeight / 2 - 40, 40, GRAY);
     }
     else
-        DrawText("PRESS [ENTER] TO PLAY AGAIN", GetScreenWidth() / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2, GetScreenHeight() / 2 - 50, 20, GRAY);
+    {
+        DrawText("PRESS [ENTER] TO PLAY AGAIN",
+                 screenWidth / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
+                 screenHeight / 2 - 50, 20, GRAY);
+    }
 
     EndDrawing();
 }
 
-// Unload game variables
-void UnloadGame(void)
-{
-    // TODO: Unload all dynamic loaded data (textures, sounds, models...)
-}
-
-// Update and Draw (one frame)
-void UpdateDrawFrame(void)
-{
-    UpdateGame();
-    DrawGame();
-}
-
-//--------------------------------------------------------------------------------------
-// Additional module functions
-//--------------------------------------------------------------------------------------
-static void UpdateOutgoingFire()
+void Game::UpdateOutgoingFire()
 {
     static int interceptorNumber = 0;
     int launcherShooting = 0;
@@ -634,59 +625,49 @@ static void UpdateOutgoingFire()
         float sideX;
         float sideY;
 
-        // Activate the interceptor
         interceptor[interceptorNumber].active = true;
-
-        // Assign start position
         interceptor[interceptorNumber].origin = launcher[launcherShooting - 1].position;
         interceptor[interceptorNumber].position = interceptor[interceptorNumber].origin;
         interceptor[interceptorNumber].objective = GetMousePosition();
 
-        // Calculate speed
         module = sqrt(pow(interceptor[interceptorNumber].objective.x - interceptor[interceptorNumber].origin.x, 2) +
                       pow(interceptor[interceptorNumber].objective.y - interceptor[interceptorNumber].origin.y, 2));
 
         sideX = (interceptor[interceptorNumber].objective.x - interceptor[interceptorNumber].origin.x) * INTERCEPTOR_SPEED / module;
         sideY = (interceptor[interceptorNumber].objective.y - interceptor[interceptorNumber].origin.y) * INTERCEPTOR_SPEED / module;
 
-        interceptor[interceptorNumber].speed = (Vector2){(float)(sideX), (float)(sideY)};
+        interceptor[interceptorNumber].speed = {sideX, sideY};
 
-        // Update
         interceptorNumber++;
         if (interceptorNumber == MAX_INTERCEPTORS)
             interceptorNumber = 0;
     }
 }
 
-static void UpdateIncomingFire()
+void Game::UpdateIncomingFire()
 {
     static int missileIndex = 0;
 
-    // Launch missile
     if (framesCounter % MISSILE_LAUNCH_FRAMES == 0)
     {
         float module;
         float sideX;
         float sideY;
 
-        // Activate the missile
         missile[missileIndex].active = true;
-
-        // Assign start position
-        missile[missileIndex].origin = (Vector2){(float)(GetRandomValue(20, screenWidth - 20)), (float)(-10)};
+        missile[missileIndex].origin = {(float)GetRandomValue(20, screenWidth - 20), -10.0f};
         missile[missileIndex].position = missile[missileIndex].origin;
-        missile[missileIndex].objective = (Vector2){(float)(GetRandomValue(20, screenWidth - 20)), (float)(screenHeight + 10)};
+        missile[missileIndex].objective = {(float)GetRandomValue(20, screenWidth - 20),
+                                           (float)(screenHeight + 10)};
 
-        // Calculate speed
         module = sqrt(pow(missile[missileIndex].objective.x - missile[missileIndex].origin.x, 2) +
                       pow(missile[missileIndex].objective.y - missile[missileIndex].origin.y, 2));
 
         sideX = (missile[missileIndex].objective.x - missile[missileIndex].origin.x) * MISSILE_SPEED / module;
         sideY = (missile[missileIndex].objective.y - missile[missileIndex].origin.y) * MISSILE_SPEED / module;
 
-        missile[missileIndex].speed = (Vector2){(float)(sideX), (float)(sideY)};
+        missile[missileIndex].speed = {sideX, sideY};
 
-        // Update
         missileIndex++;
         if (missileIndex == MAX_MISSILES)
             missileIndex = 0;
