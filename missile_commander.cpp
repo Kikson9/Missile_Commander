@@ -274,6 +274,7 @@ public:
     bool gameOver;
     bool pause;
     int score;
+    int wave;
 
     // Game objects
     Missile missile[MAX_MISSILES];
@@ -333,6 +334,7 @@ Game::Game()
     gameOver = false;
     pause = false;
     score = 0;
+    wave = 1;
     explosionIndex = 0;
 
     // Initialize positions
@@ -368,6 +370,7 @@ void Game::Reset()
     gameOver = false;
     pause = false;
     score = 0;
+    wave = 1;
     explosionIndex = 0;
 
     for (int i = 0; i < MAX_MISSILES; i++)
@@ -590,7 +593,15 @@ void Game::Draw()
             building[i].Draw();
 
         // Draw score
-        DrawText(TextFormat("SCORE %4i", score), 20, 20, 40, LIGHTGRAY);
+        DrawText(TextFormat("SCORE %06i", score), 20, 15, 30, GREEN);
+        DrawText(TextFormat("WAVE %02i", wave), screenWidth / 2 - 50, 15, 30, YELLOW);
+
+        // Building icons - top right
+        for (int i = 0; i < BUILDINGS_AMOUNT; i++)
+        {
+            Color iconColor = building[i].active ? BLUE : DARKGRAY;
+            DrawRectangle(screenWidth - 30 - (i * 22), 15, 18, 18, iconColor);
+        }
 
         if (pause)
             DrawText("GAME PAUSED",
