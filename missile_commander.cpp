@@ -35,7 +35,8 @@
 #define BUILDING_SIZE 60
 #define EXPLOSION_RADIUS 40
 
-#define MISSILE_SPEED 1
+// Removed the missile speed here cause we will want to increase its speed by 0.3 each wave
+// #define MISSILE_SPEED 1 - Commented missile speed
 #define MISSILE_LAUNCH_FRAMES 80
 #define INTERCEPTOR_SPEED 10
 #define EXPLOSION_INCREASE_TIME 90 // In frames
@@ -43,6 +44,13 @@
 
 #define EXPLOSION_COLOR (Color){125, 125, 125, 125}
 
+// Controls what phase the game is currently in
+enum class WaveState
+{
+    PLAYING, // missiles are falling, game is running normally
+    WAVE_CLEAR, // all missiles are gone, showing a wave clear message
+    WAVE_INCOMING // a countdown before the next wave begins
+};
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
@@ -275,7 +283,13 @@ public:
     bool pause;
     int score;
     int wave;
-
+    // Wave Logic
+    WaveState waveState;
+    int missilesThisWave;
+    int missilesLaunched;
+    int missilesDestroyed;
+    float missileSpeed;
+    int waveTimer; // count down during wave clear and wave incoming
     // Game objects
     Missile missile[MAX_MISSILES];
     Interceptor interceptor[MAX_INTERCEPTORS];
@@ -299,6 +313,7 @@ public:
 private:
     void UpdateOutgoingFire();
     void UpdateIncomingFire();
+    void StartNextWave();
 };
 
 //------------------------------------------------------------------------------------
@@ -337,6 +352,13 @@ Game::Game()
     wave = 1;
     explosionIndex = 0;
 
+    waveState = WaveState::WAVE_INCOMING; // Starts countdown before wave 1
+    missilesThisWave = 5; // Wave 1 = 5 missiles
+    missilesLaunched = 0;
+    missilesDestroyed = 0;
+    missileSpeed = 1.0f; // wave 1 missiles move at speed 1.0
+    waveTimer = 180; // 3 second countdown before wave 1 starts
+
     // Initialize positions
     int sparcing = screenWidth / (LAUNCHERS_AMOUNT + BUILDINGS_AMOUNT + 1);
 
@@ -373,6 +395,14 @@ void Game::Reset()
     wave = 1;
     explosionIndex = 0;
 
+    waveState = WaveState::WAVE_INCOMING; // Starts countdown before wave 1
+    missilesThisWave = 5; // Wave 1 = 5 missiles
+    missilesLaunched = 0;
+    missilesDestroyed = 0;
+    missileSpeed = 1.0f; // wave 1 missiles move at speed 1.0
+    waveTimer = 180; // 3 second countdown before wave 1 starts
+
+
     for (int i = 0; i < MAX_MISSILES; i++)
         missile[i].Reset();
     for (int i = 0; i < MAX_INTERCEPTORS; i++)
@@ -397,18 +427,50 @@ void Game::Reset()
     launcher[2].position = {(float)(9 * sparcing), (float)(screenHeight - LAUNCHER_SIZE / 2)};
 }
 
+void Game::StartNextWave()
+{
+    wave ++; // Move to the next wave number
+    missilesThisWave +=4; // add 4 more missiles to the next
+    missileSpeed += 0.3f; // Increases missile speed by 0.3
+    missilesLaunched = 0;
+    missilesDestroyed = 0;
+    waveState = WaveState::WAVE_INCOMING; // Show the wave countdown screen
+    waveTimer = 180; // Gives player 3 seconds to prepare
+}
 void Game::Update()
 {
     if (!gameOver)
     {
         if (IsKeyPressed('P'))
             pause = !pause;
+        if (IsKeyPressed('R'))
+            Reset();
 
         if (!pause)
         {
             framesCounter++;
+            if (waveState == WaveState::WAVE_INCOMING)
+            {
+                // Count down before the wave starts
+                waveTimer--;
 
+                if (waveTimer <= 0)
+                    waveState = WaveState::PLAYING;
+
+                UpdateOutgoingFire();
+            }
+            else if (waveState == WaveState::WAVE_CLEAR)
+            {
+                waveTimer--;
+
+
+                if (waveTimer <= 0) // When timer hits 0, start the next wave
+                    StartNextWave();
+            }
+            else if (waveState == WaveState::PLAYING)
+            {
             float distance;
+
 
             // Interceptors update
             for (int i = 0; i < MAX_INTERCEPTORS; i++)
@@ -444,7 +506,12 @@ void Game::Update()
                     missile[i].Update();
 
                     if (missile[i].position.y > screenHeight)
+                    {
                         missile[i].Reset();
+                        missilesDestroyed++;
+                    }
+
+
                     else
                     {
                         // Check collision with launchers
@@ -460,6 +527,7 @@ void Game::Update()
                                     missile[i].Reset();
                                     launcher[j].active = false;
 
+                                    missilesDestroyed++;
                                     explosion[explosionIndex].position = missile[i].position;
                                     explosion[explosionIndex].active = true;
                                     explosion[explosionIndex].frame = 0;
@@ -485,6 +553,7 @@ void Game::Update()
                                     missile[i].Reset();
                                     building[j].Hit();
 
+                                    missilesDestroyed++;
                                     explosion[explosionIndex].position = missile[i].position;
                                     explosion[explosionIndex].active = true;
                                     explosion[explosionIndex].frame = 0;
@@ -509,6 +578,7 @@ void Game::Update()
                                     missile[i].Reset();
                                     score += 100;
 
+                                    missilesDestroyed++;
                                     explosion[explosionIndex].position = missile[i].position;
                                     explosion[explosionIndex].active = true;
                                     explosion[explosionIndex].frame = 0;
@@ -530,9 +600,16 @@ void Game::Update()
 
             // Fire logic
             UpdateOutgoingFire();
-            UpdateIncomingFire();
+            if (missilesLaunched < missilesThisWave) // This is to check if we have launched all missiles for this wave
+                UpdateIncomingFire();
 
             // Game over logic
+
+            if (missilesLaunched >= missilesThisWave && missilesDestroyed >= missilesThisWave)
+            {// Missiles for this wave must be launched and dealt with before moving to the next wave
+                waveState = WaveState::WAVE_CLEAR;   // Switch to wave clear screen
+                waveTimer = 180;          // Show it for 3 seconds before next wave starts
+            }
             int checker = 0;
             for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
             {
@@ -549,6 +626,7 @@ void Game::Update()
                     checker++;
                 if (checker == BUILDINGS_AMOUNT)
                     gameOver = true;
+            }
             }
         }
     }
@@ -592,8 +670,10 @@ void Game::Draw()
         for (int i = 0; i < BUILDINGS_AMOUNT; i++)
             building[i].Draw();
 
+        // improved HUD: Heads-Up Display.
         // Draw score
         DrawText(TextFormat("SCORE %06i", score), 20, 15, 30, GREEN);
+        // Draw wave number
         DrawText(TextFormat("WAVE %02i", wave), screenWidth / 2 - 50, 15, 30, YELLOW);
 
         // Building icons - top right
@@ -601,6 +681,26 @@ void Game::Draw()
         {
             Color iconColor = building[i].active ? BLUE : DARKGRAY;
             DrawRectangle(screenWidth - 30 - (i * 22), 15, 18, 18, iconColor);
+        }
+
+        if (waveState == WaveState::WAVE_INCOMING)
+        {
+            // Shows a "WAVE 1 INCOMING" in big yellow text in the center
+            DrawText(TextFormat("WAVE %i INCOMING", wave),
+                screenWidth / 2 - MeasureText(TextFormat("WAVE %i INCOMING", wave), 40) / 2,
+                screenHeight / 2 - 20, 40, YELLOW);
+
+            // Shows a countdown underneath it
+            DrawText(TextFormat("STARTING IN %i...", waveTimer / 60 + 1),
+                screenWidth / 2 - MeasureText(TextFormat("STARTING IN %i...", waveTimer / 60 + 1), 20) / 2,
+                screenHeight / 2 + 30, 20, WHITE);
+        }
+        else if (waveState == WaveState::WAVE_CLEAR)
+        {
+            // Shows a "WAVE CLEAR!" in big green text in the center
+            DrawText("WAVE CLEAR!",
+                screenWidth / 2 - MeasureText("WAVE CLEAR!", 50) / 2,
+                screenHeight / 2 - 25, 50, GREEN);
         }
 
         if (pause)
@@ -674,13 +774,15 @@ void Game::UpdateIncomingFire()
         module = sqrt(pow(missile[missileIndex].objective.x - missile[missileIndex].origin.x, 2) +
                       pow(missile[missileIndex].objective.y - missile[missileIndex].origin.y, 2));
 
-        sideX = (missile[missileIndex].objective.x - missile[missileIndex].origin.x) * MISSILE_SPEED / module;
-        sideY = (missile[missileIndex].objective.y - missile[missileIndex].origin.y) * MISSILE_SPEED / module;
+        sideX = (missile[missileIndex].objective.x - missile[missileIndex].origin.x) * missileSpeed / module;
+        sideY = (missile[missileIndex].objective.y - missile[missileIndex].origin.y) * missileSpeed / module;
 
         missile[missileIndex].speed = {sideX, sideY};
 
         missileIndex++;
         if (missileIndex == MAX_MISSILES)
             missileIndex = 0;
+
+            missilesLaunched++;
     }
 }
