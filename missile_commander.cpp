@@ -429,6 +429,11 @@ void Game::Reset()
 
 void Game::StartNextWave()
 {
+    for (int i = 0; i < BUILDINGS_AMOUNT; i++)
+    {
+        if (building[i].active)
+            score += 10;
+    }
     wave ++; // Move to the next wave number
     missilesThisWave +=4; // add 4 more missiles to the next
     missileSpeed += 0.3f; // Increases missile speed by 0.3

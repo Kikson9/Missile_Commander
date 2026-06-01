@@ -1,0 +1,12 @@
+# depslib dependency file v1.0
+1780286821 source:c:\users\ahenk\desktop\missile_commander\missile_commander.cpp
+	"raylib.h"
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<math.h>
+	<emscripten/emscripten.h>
+
+1584205420 source:c:\users\ahenk\desktop\missile_commander\missile_commander\main.cpp
+	<iostream>
+
