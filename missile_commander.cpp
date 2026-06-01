@@ -713,7 +713,7 @@ void Game::Draw()
             // Shows a "WAVE 1 INCOMING" in big yellow text in the center
             DrawText(TextFormat("WAVE %i INCOMING", wave),
                 screenWidth / 2 - MeasureText(TextFormat("WAVE %i INCOMING", wave), 40) / 2,
-                screenHeight / 2 - 20, 40, YELLOW);
+                screenHeight / 2 - 20, 40, RED);
 
             // Shows a countdown underneath it
             DrawText(TextFormat("STARTING IN %i...", waveTimer / 60 + 1),
@@ -722,10 +722,13 @@ void Game::Draw()
         }
         else if (waveState == WaveState::WAVE_CLEAR)
         {
-            // Shows a "WAVE CLEAR!" in big green text in the center
+            float pulse = (sinf(framesCounter * 0.15f) + 1.0f) / 2.0f; //math function that causes the smooth wave
+            unsigned char alpha = (unsigned char)(155 + pulse * 100);
+
             DrawText("WAVE CLEAR!",
-                screenWidth / 2 - MeasureText("WAVE CLEAR!", 50) / 2,
-                screenHeight / 2 - 25, 50, GREEN);
+                     screenWidth / 2 - MeasureText("WAVE CLEAR", 50) / 2,
+                     screenHeight / 2 - 25, 50,
+                     (Color){0, 225, 0, alpha});
         }
 
         if (pause)
