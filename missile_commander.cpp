@@ -403,6 +403,8 @@ void Game::Update()
     {
         if (IsKeyPressed('P'))
             pause = !pause;
+        if (IsKeyPressed('R'))
+            Reset();
 
         if (!pause)
         {
@@ -592,8 +594,10 @@ void Game::Draw()
         for (int i = 0; i < BUILDINGS_AMOUNT; i++)
             building[i].Draw();
 
+        // improved HUD: Heads-Up Display.
         // Draw score
         DrawText(TextFormat("SCORE %06i", score), 20, 15, 30, GREEN);
+        // Draw wave number
         DrawText(TextFormat("WAVE %02i", wave), screenWidth / 2 - 50, 15, 30, YELLOW);
 
         // Building icons - top right

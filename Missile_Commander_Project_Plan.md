@@ -161,6 +161,8 @@ C++ with C++ features used where they make things cleaner.
 
 ### Visual Features (transform how it looks)
 
+## DONE
+
 **Feature 1 — Black space background + starfield**
 
 - Replace ClearBackground(RAYWHITE) with ClearBackground(BLACK)
@@ -168,6 +170,8 @@ C++ with C++ features used where they make things cleaner.
 - Draw each star as a 1px dot in DrawGame()
 - Estimated code: ~15 lines
 - Impact: single biggest visual transformation in the project
+
+## DONE
 
 **Feature 2 — Score system + HUD**
 
