@@ -31,4 +31,5 @@ missile-commander.c
 missike-commander.cpp
 
 # Logs
-*.logMissile_Commander/
+*.log
+Missile_Commander/
