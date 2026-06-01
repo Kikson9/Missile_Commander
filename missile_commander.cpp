@@ -277,12 +277,16 @@ public:
     int screenWidth;
     int screenHeight;
 
+
+
     // Game state
     int framesCounter;
     bool gameOver;
     bool pause;
     int score;
     int wave;
+    int bonusDisplay;
+    int bonusTimer;
     // Wave Logic
     WaveState waveState;
     int missilesThisWave;
@@ -351,6 +355,8 @@ Game::Game()
     score = 0;
     wave = 1;
     explosionIndex = 0;
+    bonusDisplay = 0;
+    bonusTimer = 0;
 
     waveState = WaveState::WAVE_INCOMING; // Starts countdown before wave 1
     missilesThisWave = 5; // Wave 1 = 5 missiles
@@ -429,6 +435,17 @@ void Game::Reset()
 
 void Game::StartNextWave()
 {
+    bonusDisplay = 0;
+    for (int i = 0; i < BUILDINGS_AMOUNT; i++)
+    {
+        if (building[i].active)
+        {
+            score += 10;
+            bonusDisplay += 10;
+        }
+    }
+    bonusTimer = 180;
+
     wave ++; // Move to the next wave number
     missilesThisWave +=4; // add 4 more missiles to the next
     missileSpeed += 0.3f; // Increases missile speed by 0.3
@@ -453,6 +470,7 @@ void Game::Update()
             {
                 // Count down before the wave starts
                 waveTimer--;
+                if (bonusTimer > 0) bonusTimer --;
 
                 if (waveTimer <= 0)
                     waveState = WaveState::PLAYING;
@@ -673,6 +691,13 @@ void Game::Draw()
         // improved HUD: Heads-Up Display.
         // Draw score
         DrawText(TextFormat("SCORE %06i", score), 20, 15, 30, GREEN);
+
+        if (bonusTimer > 0)
+        {
+            unsigned char alpha = (unsigned char)(255 * bonusTimer / 180.0f);
+            DrawText(TextFormat("(+%i)", bonusDisplay), 20, 48, 20, (Color){0, 255, 0, alpha});
+
+        }
         // Draw wave number
         DrawText(TextFormat("WAVE %02i", wave), screenWidth / 2 - 50, 15, 30, YELLOW);
 
