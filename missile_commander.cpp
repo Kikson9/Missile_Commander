@@ -637,7 +637,7 @@ void Game::Update()
                     if (!launcher[i].active)
                         checker++;
                     if (checker == LAUNCHERS_AMOUNT)
-                    {
+                    { // highscore check when game over
                         if (score > highScore)
                             highScore = score;
                         SaveHighScore();
@@ -652,6 +652,7 @@ void Game::Update()
                         checker++;
                     if (checker == BUILDINGS_AMOUNT)
                     {
+                        // highscore check when game over
                         if (score > highScore)
                             highScore = score;
                         SaveHighScore();

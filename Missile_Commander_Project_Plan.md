@@ -199,6 +199,8 @@ C++ with C++ features used where they make things cleaner.
 
 ### Gameplay Features (turn it into a real game)
 
+## DONE
+
 **Feature 3 — Wave system with escalating difficulty**
 
 - New globals: wave, missilesThisWave, missilesLaunched, missilesDestroyed,
@@ -210,6 +212,8 @@ C++ with C++ features used where they make things cleaner.
 - Estimated code: ~40 lines
 - Impact: gives the game its core loop and structure
 
+## DONE
+
 **Feature 4 — Wave announcement screen**
 
 - During WAVE_CLEAR: centered "WAVE CLEARED" text with Fade() pulse effect
@@ -218,6 +222,8 @@ C++ with C++ features used where they make things cleaner.
 - Reuses the Fade() function already present in the codebase
 - Estimated code: ~30 lines
 - Impact: creates tension, rhythm, and breathing room between waves
+
+## DONE
 
 **Feature 5 — High score with file persistence**
 
