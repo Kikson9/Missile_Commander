@@ -14,6 +14,7 @@
 #include "raylib.h"
 
 #include <stdio.h>
+#include <fstream>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
@@ -21,6 +22,8 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
+
+using namespace std;
 
 //----------------------------------------------------------------------------------
 // Some Defines
@@ -47,8 +50,8 @@
 // Controls what phase the game is currently in
 enum class WaveState
 {
-    PLAYING, // missiles are falling, game is running normally
-    WAVE_CLEAR, // all missiles are gone, showing a wave clear message
+    PLAYING,      // missiles are falling, game is running normally
+    WAVE_CLEAR,   // all missiles are gone, showing a wave clear message
     WAVE_INCOMING // a countdown before the next wave begins
 };
 //----------------------------------------------------------------------------------
@@ -277,13 +280,12 @@ public:
     int screenWidth;
     int screenHeight;
 
-
-
     // Game state
     int framesCounter;
     bool gameOver;
     bool pause;
     int score;
+    int highScore;
     int wave;
     int bonusDisplay;
     int bonusTimer;
@@ -318,6 +320,8 @@ private:
     void UpdateOutgoingFire();
     void UpdateIncomingFire();
     void StartNextWave();
+    void SaveHighScore();
+    void LoadHighScore();
 };
 
 //------------------------------------------------------------------------------------
@@ -353,17 +357,18 @@ Game::Game()
     gameOver = false;
     pause = false;
     score = 0;
+    highScore = 0;
     wave = 1;
     explosionIndex = 0;
     bonusDisplay = 0;
     bonusTimer = 0;
 
     waveState = WaveState::WAVE_INCOMING; // Starts countdown before wave 1
-    missilesThisWave = 5; // Wave 1 = 5 missiles
+    missilesThisWave = 5;                 // Wave 1 = 5 missiles
     missilesLaunched = 0;
     missilesDestroyed = 0;
     missileSpeed = 1.0f; // wave 1 missiles move at speed 1.0
-    waveTimer = 180; // 3 second countdown before wave 1 starts
+    waveTimer = 180;     // 3 second countdown before wave 1 starts
 
     // Initialize positions
     int sparcing = screenWidth / (LAUNCHERS_AMOUNT + BUILDINGS_AMOUNT + 1);
@@ -390,6 +395,7 @@ Game::Game()
         stars[i].y = GetRandomValue(0, screenHeight - 60);
         starBrightness[i] = GetRandomValue(100, 255);
     }
+    LoadHighScore();
 }
 
 void Game::Reset()
@@ -402,12 +408,11 @@ void Game::Reset()
     explosionIndex = 0;
 
     waveState = WaveState::WAVE_INCOMING; // Starts countdown before wave 1
-    missilesThisWave = 5; // Wave 1 = 5 missiles
+    missilesThisWave = 5;                 // Wave 1 = 5 missiles
     missilesLaunched = 0;
     missilesDestroyed = 0;
     missileSpeed = 1.0f; // wave 1 missiles move at speed 1.0
-    waveTimer = 180; // 3 second countdown before wave 1 starts
-
+    waveTimer = 180;     // 3 second countdown before wave 1 starts
 
     for (int i = 0; i < MAX_MISSILES; i++)
         missile[i].Reset();
@@ -446,13 +451,13 @@ void Game::StartNextWave()
     }
     bonusTimer = 180;
 
-    wave ++; // Move to the next wave number
-    missilesThisWave +=4; // add 4 more missiles to the next
-    missileSpeed += 0.3f; // Increases missile speed by 0.3
+    wave++;                // Move to the next wave number
+    missilesThisWave += 4; // add 4 more missiles to the next
+    missileSpeed += 0.3f;  // Increases missile speed by 0.3
     missilesLaunched = 0;
     missilesDestroyed = 0;
     waveState = WaveState::WAVE_INCOMING; // Show the wave countdown screen
-    waveTimer = 180; // Gives player 3 seconds to prepare
+    waveTimer = 180;                      // Gives player 3 seconds to prepare
 }
 void Game::Update()
 {
@@ -470,7 +475,8 @@ void Game::Update()
             {
                 // Count down before the wave starts
                 waveTimer--;
-                if (bonusTimer > 0) bonusTimer --;
+                if (bonusTimer > 0)
+                    bonusTimer--;
 
                 if (waveTimer <= 0)
                     waveState = WaveState::PLAYING;
@@ -481,170 +487,177 @@ void Game::Update()
             {
                 waveTimer--;
 
-
                 if (waveTimer <= 0) // When timer hits 0, start the next wave
                     StartNextWave();
             }
             else if (waveState == WaveState::PLAYING)
             {
-            float distance;
+                float distance;
 
-
-            // Interceptors update
-            for (int i = 0; i < MAX_INTERCEPTORS; i++)
-            {
-                if (interceptor[i].active)
+                // Interceptors update
+                for (int i = 0; i < MAX_INTERCEPTORS; i++)
                 {
-                    interceptor[i].Update();
-
-                    distance = sqrt(pow(interceptor[i].position.x - interceptor[i].objective.x, 2) +
-                                    pow(interceptor[i].position.y - interceptor[i].objective.y, 2));
-
-                    if (distance < INTERCEPTOR_SPEED)
+                    if (interceptor[i].active)
                     {
-                        interceptor[i].Reset();
+                        interceptor[i].Update();
 
-                        explosion[explosionIndex].position = interceptor[i].position;
-                        explosion[explosionIndex].active = true;
-                        explosion[explosionIndex].frame = 0;
-                        explosionIndex++;
-                        if (explosionIndex == MAX_EXPLOSIONS)
-                            explosionIndex = 0;
+                        distance = sqrt(pow(interceptor[i].position.x - interceptor[i].objective.x, 2) +
+                                        pow(interceptor[i].position.y - interceptor[i].objective.y, 2));
 
-                        break;
-                    }
-                }
-            }
-
-            // Missiles update
-            for (int i = 0; i < MAX_MISSILES; i++)
-            {
-                if (missile[i].active)
-                {
-                    missile[i].Update();
-
-                    if (missile[i].position.y > screenHeight)
-                    {
-                        missile[i].Reset();
-                        missilesDestroyed++;
-                    }
-
-
-                    else
-                    {
-                        // Check collision with launchers
-                        for (int j = 0; j < LAUNCHERS_AMOUNT; j++)
+                        if (distance < INTERCEPTOR_SPEED)
                         {
-                            if (launcher[j].active)
-                            {
-                                if (CheckCollisionPointRec(missile[i].position,
-                                                           (Rectangle){launcher[j].position.x - LAUNCHER_SIZE / 2,
-                                                                       launcher[j].position.y - LAUNCHER_SIZE / 2,
-                                                                       LAUNCHER_SIZE, LAUNCHER_SIZE}))
-                                {
-                                    missile[i].Reset();
-                                    launcher[j].active = false;
+                            interceptor[i].Reset();
 
-                                    missilesDestroyed++;
-                                    explosion[explosionIndex].position = missile[i].position;
-                                    explosion[explosionIndex].active = true;
-                                    explosion[explosionIndex].frame = 0;
-                                    explosionIndex++;
-                                    if (explosionIndex == MAX_EXPLOSIONS)
-                                        explosionIndex = 0;
+                            explosion[explosionIndex].position = interceptor[i].position;
+                            explosion[explosionIndex].active = true;
+                            explosion[explosionIndex].frame = 0;
+                            explosionIndex++;
+                            if (explosionIndex == MAX_EXPLOSIONS)
+                                explosionIndex = 0;
 
-                                    break;
-                                }
-                            }
-                        }
-
-                        // Check collision with buildings
-                        for (int j = 0; j < BUILDINGS_AMOUNT; j++)
-                        {
-                            if (building[j].active)
-                            {
-                                if (CheckCollisionPointRec(missile[i].position,
-                                                           (Rectangle){building[j].position.x - BUILDING_SIZE / 2,
-                                                                       building[j].position.y - BUILDING_SIZE / 2,
-                                                                       BUILDING_SIZE, BUILDING_SIZE}))
-                                {
-                                    missile[i].Reset();
-                                    building[j].Hit();
-
-                                    missilesDestroyed++;
-                                    explosion[explosionIndex].position = missile[i].position;
-                                    explosion[explosionIndex].active = true;
-                                    explosion[explosionIndex].frame = 0;
-                                    explosionIndex++;
-                                    if (explosionIndex == MAX_EXPLOSIONS)
-                                        explosionIndex = 0;
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        // Check collision with explosions
-                        for (int j = 0; j < MAX_EXPLOSIONS; j++)
-                        {
-                            if (explosion[j].active)
-                            {
-                                if (CheckCollisionPointCircle(missile[i].position,
-                                                              explosion[j].position,
-                                                              EXPLOSION_RADIUS * explosion[j].radiusMultiplier))
-                                {
-                                    missile[i].Reset();
-                                    score += 100;
-
-                                    missilesDestroyed++;
-                                    explosion[explosionIndex].position = missile[i].position;
-                                    explosion[explosionIndex].active = true;
-                                    explosion[explosionIndex].frame = 0;
-                                    explosionIndex++;
-                                    if (explosionIndex == MAX_EXPLOSIONS)
-                                        explosionIndex = 0;
-
-                                    break;
-                                }
-                            }
+                            break;
                         }
                     }
                 }
-            }
 
-            // Explosions update
-            for (int i = 0; i < MAX_EXPLOSIONS; i++)
-                explosion[i].Update();
+                // Missiles update
+                for (int i = 0; i < MAX_MISSILES; i++)
+                {
+                    if (missile[i].active)
+                    {
+                        missile[i].Update();
 
-            // Fire logic
-            UpdateOutgoingFire();
-            if (missilesLaunched < missilesThisWave) // This is to check if we have launched all missiles for this wave
-                UpdateIncomingFire();
+                        if (missile[i].position.y > screenHeight)
+                        {
+                            missile[i].Reset();
+                            missilesDestroyed++;
+                        }
 
-            // Game over logic
+                        else
+                        {
+                            // Check collision with launchers
+                            for (int j = 0; j < LAUNCHERS_AMOUNT; j++)
+                            {
+                                if (launcher[j].active)
+                                {
+                                    if (CheckCollisionPointRec(missile[i].position,
+                                                               (Rectangle){launcher[j].position.x - LAUNCHER_SIZE / 2,
+                                                                           launcher[j].position.y - LAUNCHER_SIZE / 2,
+                                                                           LAUNCHER_SIZE, LAUNCHER_SIZE}))
+                                    {
+                                        missile[i].Reset();
+                                        launcher[j].active = false;
 
-            if (missilesLaunched >= missilesThisWave && missilesDestroyed >= missilesThisWave)
-            {// Missiles for this wave must be launched and dealt with before moving to the next wave
-                waveState = WaveState::WAVE_CLEAR;   // Switch to wave clear screen
-                waveTimer = 180;          // Show it for 3 seconds before next wave starts
-            }
-            int checker = 0;
-            for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
-            {
-                if (!launcher[i].active)
-                    checker++;
-                if (checker == LAUNCHERS_AMOUNT)
-                    gameOver = true;
-            }
+                                        missilesDestroyed++;
+                                        explosion[explosionIndex].position = missile[i].position;
+                                        explosion[explosionIndex].active = true;
+                                        explosion[explosionIndex].frame = 0;
+                                        explosionIndex++;
+                                        if (explosionIndex == MAX_EXPLOSIONS)
+                                            explosionIndex = 0;
 
-            checker = 0;
-            for (int i = 0; i < BUILDINGS_AMOUNT; i++)
-            {
-                if (!building[i].active)
-                    checker++;
-                if (checker == BUILDINGS_AMOUNT)
-                    gameOver = true;
-            }
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Check collision with buildings
+                            for (int j = 0; j < BUILDINGS_AMOUNT; j++)
+                            {
+                                if (building[j].active)
+                                {
+                                    if (CheckCollisionPointRec(missile[i].position,
+                                                               (Rectangle){building[j].position.x - BUILDING_SIZE / 2,
+                                                                           building[j].position.y - BUILDING_SIZE / 2,
+                                                                           BUILDING_SIZE, BUILDING_SIZE}))
+                                    {
+                                        missile[i].Reset();
+                                        building[j].Hit();
+
+                                        missilesDestroyed++;
+                                        explosion[explosionIndex].position = missile[i].position;
+                                        explosion[explosionIndex].active = true;
+                                        explosion[explosionIndex].frame = 0;
+                                        explosionIndex++;
+                                        if (explosionIndex == MAX_EXPLOSIONS)
+                                            explosionIndex = 0;
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Check collision with explosions
+                            for (int j = 0; j < MAX_EXPLOSIONS; j++)
+                            {
+                                if (explosion[j].active)
+                                {
+                                    if (CheckCollisionPointCircle(missile[i].position,
+                                                                  explosion[j].position,
+                                                                  EXPLOSION_RADIUS * explosion[j].radiusMultiplier))
+                                    {
+                                        missile[i].Reset();
+                                        score += 100;
+
+                                        missilesDestroyed++;
+                                        explosion[explosionIndex].position = missile[i].position;
+                                        explosion[explosionIndex].active = true;
+                                        explosion[explosionIndex].frame = 0;
+                                        explosionIndex++;
+                                        if (explosionIndex == MAX_EXPLOSIONS)
+                                            explosionIndex = 0;
+
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Explosions update
+                for (int i = 0; i < MAX_EXPLOSIONS; i++)
+                    explosion[i].Update();
+
+                // Fire logic
+                UpdateOutgoingFire();
+                if (missilesLaunched < missilesThisWave) // This is to check if we have launched all missiles for this wave
+                    UpdateIncomingFire();
+
+                // Game over logic
+
+                if (missilesLaunched >= missilesThisWave && missilesDestroyed >= missilesThisWave)
+                {                                      // Missiles for this wave must be launched and dealt with before moving to the next wave
+                    waveState = WaveState::WAVE_CLEAR; // Switch to wave clear screen
+                    waveTimer = 180;                   // Show it for 3 seconds before next wave starts
+                }
+                int checker = 0;
+                for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
+                {
+                    if (!launcher[i].active)
+                        checker++;
+                    if (checker == LAUNCHERS_AMOUNT)
+                    {
+                        if (score > highScore)
+                            highScore = score;
+                        SaveHighScore();
+                        gameOver = true;
+                    }
+                }
+
+                checker = 0;
+                for (int i = 0; i < BUILDINGS_AMOUNT; i++)
+                {
+                    if (!building[i].active)
+                        checker++;
+                    if (checker == BUILDINGS_AMOUNT)
+                    {
+                        if (score > highScore)
+                            highScore = score;
+                        SaveHighScore();
+                        gameOver = true;
+                    }
+                }
             }
         }
     }
@@ -691,12 +704,12 @@ void Game::Draw()
         // improved HUD: Heads-Up Display.
         // Draw score
         DrawText(TextFormat("SCORE %06i", score), 20, 15, 30, GREEN);
+        DrawText(TextFormat("BEST  %06i", highScore), 20, 48, 20, DARKGREEN);
 
         if (bonusTimer > 0)
         {
             unsigned char alpha = (unsigned char)(255 * bonusTimer / 180.0f);
             DrawText(TextFormat("(+%i)", bonusDisplay), 20, 48, 20, (Color){0, 255, 0, alpha});
-
         }
         // Draw wave number
         DrawText(TextFormat("WAVE %02i", wave), screenWidth / 2 - 50, 15, 30, YELLOW);
@@ -712,17 +725,17 @@ void Game::Draw()
         {
             // Shows a "WAVE 1 INCOMING" in big yellow text in the center
             DrawText(TextFormat("WAVE %i INCOMING", wave),
-                screenWidth / 2 - MeasureText(TextFormat("WAVE %i INCOMING", wave), 40) / 2,
-                screenHeight / 2 - 20, 40, RED);
+                     screenWidth / 2 - MeasureText(TextFormat("WAVE %i INCOMING", wave), 40) / 2,
+                     screenHeight / 2 - 20, 40, RED);
 
             // Shows a countdown underneath it
             DrawText(TextFormat("STARTING IN %i...", waveTimer / 60 + 1),
-                screenWidth / 2 - MeasureText(TextFormat("STARTING IN %i...", waveTimer / 60 + 1), 20) / 2,
-                screenHeight / 2 + 30, 20, WHITE);
+                     screenWidth / 2 - MeasureText(TextFormat("STARTING IN %i...", waveTimer / 60 + 1), 20) / 2,
+                     screenHeight / 2 + 30, 20, WHITE);
         }
         else if (waveState == WaveState::WAVE_CLEAR)
         {
-            float pulse = (sinf(framesCounter * 0.15f) + 1.0f) / 2.0f; //math function that causes the smooth wave
+            float pulse = (sinf(framesCounter * 0.15f) + 1.0f) / 2.0f; // math function that causes the smooth wave
             unsigned char alpha = (unsigned char)(155 + pulse * 100);
 
             DrawText("WAVE CLEAR!",
@@ -811,6 +824,26 @@ void Game::UpdateIncomingFire()
         if (missileIndex == MAX_MISSILES)
             missileIndex = 0;
 
-            missilesLaunched++;
+        missilesLaunched++;
+    }
+}
+
+void Game::SaveHighScore()
+{
+    ofstream file("highscore.txt");
+    if (file.is_open())
+    {
+        file << highScore;
+        file.close();
+    }
+}
+
+void Game::LoadHighScore()
+{
+    ifstream file("highscore.txt");
+    if (file.is_open())
+    {
+        file >> highScore;
+        file.close();
     }
 }
