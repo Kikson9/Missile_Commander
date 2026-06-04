@@ -704,12 +704,12 @@ void Game::Draw()
         // improved HUD: Heads-Up Display.
         // Draw score
         DrawText(TextFormat("SCORE %06i", score), 20, 15, 30, GREEN);
-        DrawText(TextFormat("BEST  %06i", highScore), 20, 48, 20, DARKGREEN);
+        DrawText(TextFormat("BEST  %06i", highScore), 20, 50, 18, DARKGREEN);
 
         if (bonusTimer > 0)
         {
             unsigned char alpha = (unsigned char)(255 * bonusTimer / 180.0f);
-            DrawText(TextFormat("(+%i)", bonusDisplay), 20, 48, 20, (Color){0, 255, 0, alpha});
+            DrawText(TextFormat("(+%i)", bonusDisplay), 20, 72, 18, (Color){0, 255, 0, alpha});
         }
         // Draw wave number
         DrawText(TextFormat("WAVE %02i", wave), screenWidth / 2 - 50, 15, 30, YELLOW);
