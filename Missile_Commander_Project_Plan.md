@@ -236,7 +236,9 @@ C++ with C++ features used where they make things cleaner.
 
 ### Advanced Features (technical depth)
 
-**Feature 6 — MIRVs (splitting missiles)**
+## DONE
+
+**Feature 6 — MIRVs (splitting missiles) [Multiple Independently targetable Reentry Vehicle}**
 
 - Add bool isMirv and bool hasSplit fields to the existing Missile struct
 - From wave 3 onwards, ~25% of missiles flagged as MIRVs on spawn

@@ -65,6 +65,8 @@ public:
     Vector2 objective;
     Vector2 speed;
     bool active;
+    bool isMirv;
+    bool hasSplit;
 
     Missile()
     {
@@ -73,11 +75,15 @@ public:
         objective = {0, 0};
         speed = {0, 0};
         active = false;
+        isMirv = false;
+        hasSplit = false;
     }
 
     void Reset()
     {
         active = false;
+        isMirv = false;
+        hasSplit = false;
     }
 
     bool IsActive()
@@ -89,9 +95,13 @@ public:
     {
         if (!active)
             return;
-        DrawLine(origin.x, origin.y, position.x, position.y, RED);
+
+        Color trailColor = isMirv ? SKYBLUE : RED;
+        Color tipColor = isMirv ? WHITE : YELLOW;
+
+        DrawLine(origin.x, origin.y, position.x, position.y, trailColor);
         if (frame % 16 < 8)
-            DrawCircle(position.x, position.y, 3, YELLOW);
+            DrawCircle(position.x, position.y, 3, tipColor);
     }
 
     void Update()
@@ -527,6 +537,46 @@ void Game::Update()
                     {
                         missile[i].Update();
 
+                        // MIRV split check
+                        if (missile[i].active && missile[i].isMirv && !missile[i].hasSplit &&
+                            missile[i].position.y >= screenHeight / 2)
+                        {
+                            missile[i].hasSplit = true;
+
+                            // Spawn 3 child missiles fanning toward different buildings
+                            int targets[3] = {0, 2, 4}; // building indices to target
+                            for (int c = 0; c < 3; c++)
+                            {
+                                // Find empty missile slot
+                                for (int k = 0; k < MAX_MISSILES; k++)
+                                {
+                                    if (!missile[k].active)
+                                    {
+                                        missile[k].active = true;
+                                        missile[k].isMirv = false;
+                                        missile[k].hasSplit = false;
+                                        missile[k].origin = missile[i].position;
+                                        missile[k].position = missile[i].position;
+                                        missile[k].objective = building[targets[c]].active ? building[targets[c]].position : (Vector2){(float)GetRandomValue(20, screenWidth - 20), (float)(screenHeight + 10)};
+
+                                        // Calculate speed toward target
+                                        float dx = missile[k].objective.x - missile[k].origin.x;
+                                        float dy = missile[k].objective.y - missile[k].origin.y;
+                                        float dist = sqrt(dx * dx + dy * dy);
+                                        missile[k].speed = {dx / dist * missileSpeed * 1.5f,
+                                                            dy / dist * missileSpeed * 1.5f};
+
+                                        missilesLaunched++;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Deactivate the MIRV itself
+                            missile[i].active = false;
+                            missilesDestroyed++;
+                        }
+
                         if (missile[i].position.y > screenHeight)
                         {
                             missile[i].Reset();
@@ -808,6 +858,9 @@ void Game::UpdateIncomingFire()
         float sideY;
 
         missile[missileIndex].active = true;
+        // From wave 3 onwards, 25% chance of being a MIRV
+        missile[missileIndex].isMirv = (wave >= 3) && (GetRandomValue(0, 3) == 0);
+        missile[missileIndex].hasSplit = false;
         missile[missileIndex].origin = {(float)GetRandomValue(20, screenWidth - 20), -10.0f};
         missile[missileIndex].position = missile[missileIndex].origin;
         missile[missileIndex].objective = {(float)GetRandomValue(20, screenWidth - 20),
