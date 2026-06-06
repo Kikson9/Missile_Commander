@@ -727,6 +727,10 @@ void Game::Update()
                 for (int i = 0; i < MAX_EXPLOSIONS; i++)
                     explosion[i].Update();
 
+                // Particles update
+                for (int i = 0; i < MAX_PARTICLES; i++)
+                    particles[i].Update();
+
                 // Fire logic
                 UpdateOutgoingFire();
                 if (missilesLaunched < missilesThisWave) // This is to check if we have launched all missiles for this wave
@@ -801,6 +805,10 @@ void Game::Draw()
         // Draw explosions
         for (int i = 0; i < MAX_EXPLOSIONS; i++)
             explosion[i].Draw();
+
+        // Draw particles
+        for (int i = 0; i < MAX_PARTICLES; i++)
+            particles[i].Draw();
 
         // Draw launchers
         for (int i = 0; i < LAUNCHERS_AMOUNT; i++)
