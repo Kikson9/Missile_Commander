@@ -884,10 +884,23 @@ void Game::Draw()
                  screenHeight / 2 - 50, 20, GRAY);
     }
 
-    // Screen flash — draws on top of everything
+    // Screen flash: Vignette flash on city destruction
     if (screenFlash > 0)
-        DrawRectangle(0, 0, screenWidth, screenHeight,
-                      (Color){255, 0, 0, (unsigned char)(screenFlash * 20)});
+    {
+        unsigned char alpha = (unsigned char)(screenFlash * 20);
+
+        // Draw 4 edge rectangles: top, bottom, left, right
+        // leaving the center of the screen clear
+        int thickness = 60;
+        DrawRectangle(0, 0, screenWidth, thickness,
+                      (Color){255, 0, 0, alpha}); // top
+        DrawRectangle(0, screenHeight - thickness, screenWidth, thickness,
+                      (Color){255, 0, 0, alpha}); // bottom
+        DrawRectangle(0, 0, thickness, screenHeight,
+                      (Color){255, 0, 0, alpha}); // left
+        DrawRectangle(screenWidth - thickness, 0, thickness, screenHeight,
+                      (Color){255, 0, 0, alpha}); // right
+    }
 
     EndDrawing();
 }
