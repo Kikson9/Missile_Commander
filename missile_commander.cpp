@@ -386,6 +386,7 @@ private:
     void StartNextWave();
     void SaveHighScore();
     void LoadHighScore();
+    void SpawnParticles(Vector2 position);
 };
 
 //------------------------------------------------------------------------------------
@@ -649,10 +650,11 @@ void Game::Update()
                                                                            launcher[j].position.y - LAUNCHER_SIZE / 2,
                                                                            LAUNCHER_SIZE, LAUNCHER_SIZE}))
                                     {
+                                        SpawnParticles(missile[i].position);
                                         missile[i].Reset();
                                         launcher[j].active = false;
-
                                         missilesDestroyed++;
+
                                         explosion[explosionIndex].position = missile[i].position;
                                         explosion[explosionIndex].active = true;
                                         explosion[explosionIndex].frame = 0;
@@ -675,10 +677,11 @@ void Game::Update()
                                                                            building[j].position.y - BUILDING_SIZE / 2,
                                                                            BUILDING_SIZE, BUILDING_SIZE}))
                                     {
+                                        SpawnParticles(missile[i].position);
                                         missile[i].Reset();
                                         building[j].Hit();
-
                                         missilesDestroyed++;
+
                                         explosion[explosionIndex].position = missile[i].position;
                                         explosion[explosionIndex].active = true;
                                         explosion[explosionIndex].frame = 0;
@@ -700,10 +703,11 @@ void Game::Update()
                                                                   explosion[j].position,
                                                                   EXPLOSION_RADIUS * explosion[j].radiusMultiplier))
                                     {
+                                        SpawnParticles(missile[i].position);
                                         missile[i].Reset();
                                         score += 100;
-
                                         missilesDestroyed++;
+
                                         explosion[explosionIndex].position = missile[i].position;
                                         explosion[explosionIndex].active = true;
                                         explosion[explosionIndex].frame = 0;
@@ -953,5 +957,31 @@ void Game::LoadHighScore()
     {
         file >> highScore;
         file.close();
+    }
+}
+
+void Game::SpawnParticles(Vector2 pos)
+{
+    int spawned = 0;
+
+    for (int i = 0; i < MAX_PARTICLES && spawned < 8; i++)
+    {
+        if (!particles[i].active)
+        {
+            // Random angle in radians
+            float angle = GetRandomValue(0, 360) * DEG2RAD;
+
+            // Random speed between 1 and 4
+            float speed = GetRandomValue(1, 4);
+
+            particles[i].active = true;
+            particles[i].position = pos;
+            particles[i].velocity = {cosf(angle) * speed,
+                                     sinf(angle) * speed};
+            particles[i].alpha = 255.0f;
+            particles[i].size = GetRandomValue(2, 4);
+
+            spawned++;
+        }
     }
 }
