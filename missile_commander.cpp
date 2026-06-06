@@ -489,6 +489,8 @@ void Game::Reset()
         launcher[i].Reset();
     for (int i = 0; i < BUILDINGS_AMOUNT; i++)
         building[i].Reset();
+    for (int i = 0; i < MAX_PARTICLES; i++)
+        particles[i].Reset();
 
     int sparcing = screenWidth / (LAUNCHERS_AMOUNT + BUILDINGS_AMOUNT + 1);
 
