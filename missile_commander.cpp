@@ -347,6 +347,7 @@ public:
     int score;
     int highScore;
     int wave;
+    int screenFlash;
     int bonusDisplay;
     int bonusTimer;
     // Wave Logic
@@ -424,6 +425,7 @@ Game::Game()
     score = 0;
     highScore = 0;
     wave = 1;
+    screenFlash = 0;
     explosionIndex = 0;
     bonusDisplay = 0;
     bonusTimer = 0;
@@ -470,6 +472,7 @@ void Game::Reset()
     pause = false;
     score = 0;
     wave = 1;
+    screenFlash = 0;
     explosionIndex = 0;
 
     waveState = WaveState::WAVE_INCOMING; // Starts countdown before wave 1
@@ -683,6 +686,7 @@ void Game::Update()
                                         SpawnParticles(missile[i].position);
                                         missile[i].Reset();
                                         building[j].Hit();
+                                        screenFlash = 8;
                                         missilesDestroyed++;
 
                                         explosion[explosionIndex].position = missile[i].position;
@@ -733,6 +737,10 @@ void Game::Update()
                 // Particles update
                 for (int i = 0; i < MAX_PARTICLES; i++)
                     particles[i].Update();
+
+                // Screen flash update
+                if (screenFlash > 0)
+                    screenFlash--;
 
                 // Fire logic
                 UpdateOutgoingFire();
@@ -875,6 +883,11 @@ void Game::Draw()
                  screenWidth / 2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20) / 2,
                  screenHeight / 2 - 50, 20, GRAY);
     }
+
+    // Screen flash — draws on top of everything
+    if (screenFlash > 0)
+        DrawRectangle(0, 0, screenWidth, screenHeight,
+                      (Color){255, 0, 0, (unsigned char)(screenFlash * 20)});
 
     EndDrawing();
 }
