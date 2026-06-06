@@ -364,6 +364,10 @@ public:
     Building building[BUILDINGS_AMOUNT];
     int explosionIndex;
 
+    // Particles
+    static const int MAX_PARTICLES = 200;
+    Particle particles[200];
+
     // Starfield
     Vector2 stars[150];
     int starBrightness[150];
