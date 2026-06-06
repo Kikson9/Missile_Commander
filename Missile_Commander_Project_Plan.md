@@ -181,6 +181,8 @@ C++ with C++ features used where they make things cleaner.
 - Estimated code: ~25 lines
 - Impact: game now has feedback and reason to play well
 
+## DONE
+
 **Feature 7 — Particle debris on missile destruction**
 
 - New Particle struct: position, velocity, alpha, size, active

@@ -526,6 +526,7 @@ void Game::StartNextWave()
     waveState = WaveState::WAVE_INCOMING; // Show the wave countdown screen
     waveTimer = 180;                      // Gives player 3 seconds to prepare
 }
+
 void Game::Update()
 {
     if (!gameOver)
