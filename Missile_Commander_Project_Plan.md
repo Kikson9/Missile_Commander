@@ -191,6 +191,8 @@ C++ with C++ features used where they make things cleaner.
 - Estimated code: ~50 lines
 - Impact: every missile kill feels satisfying and responsive
 
+## DONE
+
 **Feature 8 — City destruction screen flash**
 
 - Global int screenFlash = 0
