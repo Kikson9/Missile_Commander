@@ -12,6 +12,7 @@
  ********************************************************************************************/
 
 #include "raylib.h"
+#include <raymath.h>
 
 #include <stdio.h>
 #include <fstream>
@@ -67,6 +68,7 @@ public:
     bool active;
     bool isMirv;
     bool hasSplit;
+    bool isSmart;
 
     Missile()
     {
@@ -77,6 +79,7 @@ public:
         active = false;
         isMirv = false;
         hasSplit = false;
+        isSmart = false;
     }
 
     void Reset()
@@ -84,6 +87,7 @@ public:
         active = false;
         isMirv = false;
         hasSplit = false;
+        isSmart = false;
     }
 
     bool IsActive()
@@ -96,8 +100,8 @@ public:
         if (!active)
             return;
 
-        Color trailColor = isMirv ? SKYBLUE : RED;
-        Color tipColor = isMirv ? WHITE : YELLOW;
+        Color trailColor = isSmart ? MAGENTA : (isMirv ? SKYBLUE : RED);
+        Color tipColor = isSmart ? WHITE : (isMirv ? WHITE : YELLOW);
 
         DrawLine(origin.x, origin.y, position.x, position.y, trailColor);
         if (frame % 16 < 8)
@@ -598,6 +602,34 @@ void Game::Update()
                     {
                         missile[i].Update();
 
+                         if (missile[i].isSmart)
+                        {
+                            float threatRange = 80.0f;
+
+                            for (int e = 0; e < MAX_EXPLOSIONS; e++)
+                            {
+                                if (explosion[e].active)
+                                {
+                                    Vector2 awayFromExplosion = Vector2Subtract(
+                                        missile[i].position,
+                                        explosion[e].position
+                                    );
+
+                                    float dist = sqrtf(
+                                        awayFromExplosion.x * awayFromExplosion.x +
+                                        awayFromExplosion.y * awayFromExplosion.y
+                                    );
+
+                                    if (dist < threatRange)
+                                    {
+                                        Vector2 nudge = Vector2Normalize(awayFromExplosion);
+                                        missile[i].speed.x += nudge.x * 0.3f;
+                                        missile[i].speed.y += nudge.y * 0.3f;
+                                    }
+                                }
+                            }
+                        }
+
                         // MIRV split check
                         if (missile[i].active && missile[i].isMirv && !missile[i].hasSplit &&
                             missile[i].position.y >= screenHeight / 2)
@@ -956,6 +988,8 @@ void Game::UpdateIncomingFire()
         // From wave 3 onwards, 25% chance of being a MIRV
         missile[missileIndex].isMirv = (wave >= 3) && (GetRandomValue(0, 3) == 0);
         missile[missileIndex].hasSplit = false;
+        // From wave 5 onwards, 15% chance of being a smart bomb
+        missile[missileIndex].isSmart =  (wave >= 5) && (GetRandomValue(0, 6) == 0);
         missile[missileIndex].origin = {(float)GetRandomValue(20, screenWidth - 20), -10.0f};
         missile[missileIndex].position = missile[missileIndex].origin;
         missile[missileIndex].objective = {(float)GetRandomValue(20, screenWidth - 20),
