@@ -543,6 +543,28 @@ void Game::Update()
         if (IsKeyPressed('R'))
             Reset();
 
+        // CHEAT KEYS
+        if (IsKeyPressed('W')) // press W to skip to next wave instantly
+        {
+            wave++;
+            missilesThisWave += 4;
+            missileSpeed += 0.3f;
+            missilesLaunched = missilesThisWave;
+            missilesDestroyed = missilesThisWave;
+            waveState = WaveState::WAVE_CLEAR;
+            waveTimer = 1;
+        }
+        if (IsKeyPressed('G')) // press G to jump straight to wave 5
+        {
+            wave = 5;
+            missilesThisWave = 5 + (4 * 4); // wave 5 missile count
+            missileSpeed = 1.0f + (0.3f * 4);
+            missilesLaunched = missilesThisWave;
+            missilesDestroyed = missilesThisWave;
+            waveState = WaveState::WAVE_CLEAR;
+            waveTimer = 1;
+        }
+
         if (!pause)
         {
             framesCounter++;
@@ -602,7 +624,7 @@ void Game::Update()
                     {
                         missile[i].Update();
 
-                         if (missile[i].isSmart)
+                        if (missile[i].isSmart)
                         {
                             float threatRange = 80.0f;
 
@@ -612,13 +634,11 @@ void Game::Update()
                                 {
                                     Vector2 awayFromExplosion = Vector2Subtract(
                                         missile[i].position,
-                                        explosion[e].position
-                                    );
+                                        explosion[e].position);
 
                                     float dist = sqrtf(
                                         awayFromExplosion.x * awayFromExplosion.x +
-                                        awayFromExplosion.y * awayFromExplosion.y
-                                    );
+                                        awayFromExplosion.y * awayFromExplosion.y);
 
                                     if (dist < threatRange)
                                     {
@@ -988,7 +1008,7 @@ void Game::UpdateIncomingFire()
         missile[missileIndex].isMirv = (wave >= 3) && (GetRandomValue(0, 3) == 0);
         missile[missileIndex].hasSplit = false;
         // From wave 5 onwards, 15% chance of being a smart bomb
-        missile[missileIndex].isSmart =  (wave >= 5) && (GetRandomValue(0, 6) == 0);
+        missile[missileIndex].isSmart = (wave >= 5) && (GetRandomValue(0, 6) == 0);
         missile[missileIndex].origin = {(float)GetRandomValue(20, screenWidth - 20), -10.0f};
         missile[missileIndex].position = missile[missileIndex].origin;
         missile[missileIndex].objective = {(float)GetRandomValue(20, screenWidth - 20),
