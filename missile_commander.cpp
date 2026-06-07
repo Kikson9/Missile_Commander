@@ -659,7 +659,6 @@ void Game::Update()
                                         missile[k].speed = {dx / dist * missileSpeed * 1.5f,
                                                             dy / dist * missileSpeed * 1.5f};
 
-                                        missilesLaunched++;
                                         break;
                                     }
                                 }
