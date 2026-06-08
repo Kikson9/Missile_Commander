@@ -69,6 +69,8 @@ public:
     bool isMirv;
     bool hasSplit;
     bool isSmart;
+    bool leftBlocked;
+    bool rightBlocked;
 
     Missile()
     {
@@ -80,6 +82,8 @@ public:
         isMirv = false;
         hasSplit = false;
         isSmart = false;
+        leftBlocked = false;
+        rightBlocked = false;
     }
 
     void Reset()
@@ -88,6 +92,8 @@ public:
         isMirv = false;
         hasSplit = false;
         isSmart = false;
+        leftBlocked = false;
+        rightBlocked = false;
     }
 
     bool IsActive()
@@ -628,26 +634,74 @@ void Game::Update()
                         {
                             float threatRange = 80.0f;
 
+                            missile[i].leftBlocked = false;
+                            missile[i].rightBlocked = false;
+
                             for (int e = 0; e < MAX_EXPLOSIONS; e++)
                             {
                                 if (explosion[e].active)
                                 {
-                                    Vector2 awayFromExplosion = Vector2Subtract(
+                                    Vector2 away = Vector2Subtract(
                                         missile[i].position,
                                         explosion[e].position);
 
-                                    float dist = sqrtf(
-                                        awayFromExplosion.x * awayFromExplosion.x +
-                                        awayFromExplosion.y * awayFromExplosion.y);
+                                    float dist = sqrtf(away.x * away.x + away.y * away.y);
 
                                     if (dist < threatRange)
                                     {
-                                        Vector2 nudge = Vector2Normalize(awayFromExplosion);
-                                        missile[i].speed.x += nudge.x * 0.3f;
-                                        missile[i].speed.y += nudge.y * 0.3f;
+                                        if (explosion[e].position.x < missile[i].position.x)
+                                            missile[i].leftBlocked = true;
+                                        else
+                                            missile[i].rightBlocked = true;
+
+                                        Vector2 nudge = Vector2Normalize(away);
+                                        missile[i].speed.x += nudge.x * 0.5f;
+
+                                        if (nudge.y > 0)
+                                            missile[i].speed.y += nudge.y * 0.3f;
                                     }
                                 }
                             }
+                            if (missile[i].leftBlocked && missile[i].rightBlocked && missile[i].active)
+                            {
+                                missile[i].active = false;
+                                missilesDestroyed++;
+
+                                float fanAngles[3] = {-0.6f, 0.0f, 0.6f};
+
+                                for (int f = 0; f < 3; f++)
+                                {
+                                    for (int k = 0; k < MAX_MISSILES; k++)
+                                    {
+                                        if (!missile[k].active)
+                                        {
+                                            missile[k].active    = true;
+                                            missile[k].isMirv    = false;
+                                            missile[k].hasSplit  = false;
+                                            missile[k].isSmart   = false;
+                                            missile[k].leftBlocked  = false;
+                                            missile[k].rightBlocked = false;
+                                            missile[k].origin    = missile[i].position;
+                                            missile[k].position  = missile[i].position;
+
+
+                                            float speedMag = missileSpeed * 1.8f;
+                                            missile[k].speed = {
+                                                sinf(fanAngles[f]) * speedMag,
+                                                cosf(fanAngles[f]) * speedMag
+                                            };
+
+                                            missile[k].objective = {
+                                                (float)GetRandomValue(20, screenWidth - 20),
+                                                (float)(screenHeight + 10)
+                                            };
+
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
                         }
 
                         // MIRV split check
