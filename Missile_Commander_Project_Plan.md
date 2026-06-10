@@ -252,6 +252,8 @@ C++ with C++ features used where they make things cleaner.
 - Estimated code: ~60 lines
 - Impact: most visually dramatic feature, requires new strategy from player
 
+## DONE
+
 **Feature 9 — Smart bombs that dodge explosions**
 
 - Add bool isSmart field to Missile struct

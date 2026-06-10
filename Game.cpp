@@ -120,30 +120,9 @@ void Game::Update()
     {
         if (IsKeyPressed('P'))
             pause = !pause;
+
         if (IsKeyPressed('R'))
             Reset();
-
-        // CHEAT KEYS — remove before presentation
-        if (IsKeyPressed('W'))
-        {
-            wave++;
-            missilesThisWave += 4;
-            missileSpeed += 0.3f;
-            missilesLaunched = missilesThisWave;
-            missilesDestroyed = missilesThisWave;
-            waveState = WaveState::WAVE_CLEAR;
-            waveTimer = 1;
-        }
-        if (IsKeyPressed('G'))
-        {
-            wave = 5;
-            missilesThisWave = 5 + (4 * 4);
-            missileSpeed = 1.0f + (0.3f * 4);
-            missilesLaunched = missilesThisWave;
-            missilesDestroyed = missilesThisWave;
-            waveState = WaveState::WAVE_CLEAR;
-            waveTimer = 1;
-        }
 
         if (!pause)
         {
